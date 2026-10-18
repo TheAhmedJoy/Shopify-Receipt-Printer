@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">Shopify Receipt Printer</string>
+
+    <string name="section_status">Status</string>
+    <string name="section_log">Activity</string>
+    <string name="section_shopify">Shopify</string>
+    <string name="section_printer">Printer</string>
+    <string name="section_polling">Polling</string>
+
+    <string name="hint_store_domain">Store domain</string>
+    <string name="helper_store_domain">The xxx.myshopify.com address, not the custom domain</string>
+    <string name="hint_access_token">Admin API access token</string>
+    <string name="helper_token_built_in">Built into the app</string>
+    <string name="hint_api_version">API version (e.g. 2026-10)</string>
+    <string name="hint_printer_host">Printer IP (blank = find automatically)</string>
+    <string name="hint_printer_port">Port</string>
+    <string name="hint_ticket_header">Ticket header</string>
+    <string name="hint_poll_seconds">Poll every (seconds)</string>
+    <string name="hint_lookback_hours">Max look back (hours)</string>
+
+    <string name="save">Save settings</string>
+    <string name="poll_now">Check now</string>
+    <string name="test_print">Print test ticket</string>
+    <string name="test_shopify">Check Shopify</string>
+    <string name="find_printer">Find printer</string>
+    <string name="skip_existing">Ignore orders before now</string>
+    <string name="battery_settings">Battery settings</string>
+</resources>

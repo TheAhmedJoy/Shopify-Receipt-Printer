@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="crust_200">#FFE0B48A</color>
+    <color name="crust_500">#FF9C5B2E</color>
+    <color name="crust_700">#FF6E3B17</color>
+    <color name="sage_200">#FFB5C9A8</color>
+    <color name="sage_700">#FF4F6B43</color>
+    <color name="error">#FFC62828</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>
