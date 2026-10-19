@@ -20,3 +20,7 @@ local.properties
 
 # Local project notes (contains client details)
 CLAUDE.md
+
+# Built APKs contain the store token
+/release/
+*.apk
