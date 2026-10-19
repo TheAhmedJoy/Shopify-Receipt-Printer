@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Merged into a vertical LinearLayout: the three action panels, stacked -->
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <com.google.android.material.card.MaterialCardView style="@style/Card">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                style="@style/SectionTitle"
+                android:text="@string/section_orders" />
+
+            <TextView
+                style="@style/Description"
+                android:text="@string/orders_description" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/pollNowButton"
+                style="@style/ActionButton"
+                android:layout_width="match_parent"
+                android:text="@string/poll_now" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/testPrintButton"
+                style="@style/ActionButton.Outlined"
+                android:layout_width="match_parent"
+                android:layout_marginTop="12dp"
+                android:text="@string/test_print" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView style="@style/Card">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                style="@style/SectionTitle"
+                android:text="@string/section_printer" />
+
+            <TextView
+                style="@style/Description"
+                android:text="@string/printer_description" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Field"
+                android:hint="@string/hint_printer_host"
+                app:helperText="@string/helper_printer_host">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/printerHost"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:digits="0123456789."
+                    android:imeOptions="actionDone"
+                    android:inputType="numberDecimal"
+                    android:maxLines="1"
+                    android:textSize="16sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/findPrinterButton"
+                    style="@style/ActionButton.Outlined"
+                    android:layout_width="0dp"
+                    android:layout_marginEnd="12dp"
+                    android:layout_weight="1"
+                    android:text="@string/find_printer" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/savePrinterButton"
+                    style="@style/ActionButton"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:text="@string/save_printer" />
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView style="@style/Card">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                style="@style/SectionTitle"
+                android:text="@string/section_device" />
+
+            <TextView
+                style="@style/Description"
+                android:text="@string/device_description" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/batteryButton"
+                style="@style/ActionButton.Outlined"
+                android:layout_width="match_parent"
+                android:text="@string/battery_settings" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</merge>

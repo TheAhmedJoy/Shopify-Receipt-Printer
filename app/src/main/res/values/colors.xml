@@ -5,7 +5,15 @@
     <color name="crust_700">#FF6E3B17</color>
     <color name="sage_200">#FFB5C9A8</color>
     <color name="sage_700">#FF4F6B43</color>
-    <color name="error">#FFC62828</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Screen surfaces -->
+    <color name="page">#FFF7F2EC</color>
+    <color name="card_stroke">#FFE6DCD1</color>
+    <color name="error_container">#FFFDECEA</color>
+    <color name="on_error_container">#FF8C1D18</color>
+    <color name="status_ok">#FF3E8E41</color>
+    <color name="status_warn">#FFC62828</color>
+    <color name="status_idle">#FF9E9E9E</color>
 </resources>

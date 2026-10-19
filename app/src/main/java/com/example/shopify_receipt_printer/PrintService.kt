@@ -26,7 +26,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
-/** Foreground service that polls Shopify on a fixed interval for as long as it is enabled. */
+/** Foreground service that polls Shopify on a fixed interval. It always runs; there is no off switch. */
 class PrintService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var loop: Job? = null
@@ -53,14 +53,8 @@ class PrintService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        when (intent?.action) {
-            ACTION_STOP -> {
-                stopSelf()
-                return START_NOT_STICKY
-            }
-            // Cut the current wait short rather than cancelling, so a print in progress is never interrupted
-            ACTION_POLL_NOW -> wake.trySend(Unit)
-        }
+        // Cut the current wait short rather than cancelling, so a print in progress is never interrupted
+        if (intent?.action == ACTION_POLL_NOW) wake.trySend(Unit)
         if (loop?.isActive != true) loop = scope.launch { runLoop() }
         return START_STICKY
     }
@@ -115,7 +109,6 @@ class PrintService : Service() {
     companion object {
         private const val CHANNEL_ID = "printing"
         private const val NOTIFICATION_ID = 1
-        private const val ACTION_STOP = "stop"
         private const val ACTION_POLL_NOW = "poll_now"
         private val TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss")
 
@@ -131,10 +124,6 @@ class PrintService : Service() {
             ContextCompat.startForegroundService(
                 context, Intent(context, PrintService::class.java).setAction(ACTION_POLL_NOW),
             )
-        }
-
-        fun stop(context: Context) {
-            if (isRunning) context.startService(Intent(context, PrintService::class.java).setAction(ACTION_STOP))
         }
     }
 }

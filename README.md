@@ -50,11 +50,14 @@ There is nothing else to set up. The app keeps running after you leave it and st
 
 Opening the app shows:
 
-- **Status**: whether orders are printing automatically, when the store was last checked, and the last order printed
+- **Status**: whether orders are printing automatically, when the store was last checked, the last order printed, and any problem that needs attention
 - **Activity**: a short log of recent prints and any problems
+- **Check for orders now**: checks for new orders straight away
 - **Print test ticket**: prints a sample ticket to check the printer
-- **Check now**: checks for new orders straight away
-- **Find printer**: searches the network for the printer again
+- **Printer**: the printer's address, with **Find printer** to search the network again
+- **Battery settings**: lets the app keep running in the background
+
+There are no store settings on the screen. Everything the app needs is built in, so there is nothing to set up or accidentally change.
 
 ## Troubleshooting
 
@@ -62,7 +65,7 @@ Opening the app shows:
 |---|---|
 | Nothing printed after installing | Check the printer is on, has paper, and is on the same WiFi. Then press **Find printer**. |
 | Orders stopped printing | Open the app and read the message at the top of the status panel. Most problems are the printer being off, out of paper, or off the WiFi. |
-| A ticket printed on the wrong printer | Type the correct printer's IP address into the Printer IP field and press **Save settings**. |
+| A ticket printed on the wrong printer | Type the correct printer's IP address into the Printer IP field and press **Save**. |
 | The app stops after a while | In the device's settings, allow the app to run in the background without battery restrictions. The **Battery settings** button in the app goes straight there. |
 
 Orders placed while the printer was off will print as soon as it is back on.

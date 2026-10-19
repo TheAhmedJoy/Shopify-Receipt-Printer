@@ -10,7 +10,7 @@ class BootReceiver : BroadcastReceiver() {
         when (intent.action) {
             Intent.ACTION_BOOT_COMPLETED,
             Intent.ACTION_MY_PACKAGE_REPLACED,
-            -> if (Settings(context).serviceEnabled) PrintService.start(context)
+            -> PrintService.start(context)
         }
     }
 }

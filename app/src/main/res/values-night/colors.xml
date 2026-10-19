@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="page">#FF0F0D0B</color>
+    <color name="card_stroke">#FF35302B</color>
+    <color name="error_container">#FF3B1614</color>
+    <color name="on_error_container">#FFFFB4AB</color>
+    <color name="status_ok">#FF81C784</color>
+    <color name="status_warn">#FFEF9A9A</color>
+</resources>
