@@ -1,6 +1,8 @@
 package com.example.shopify_receipt_printer
 
 import com.example.shopify_receipt_printer.EscPos.Align
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -15,6 +17,11 @@ object TicketFormatter {
     private const val QTY_COLS = 5
     private const val ITEM_INDENT = QTY_COLS * 2
     private const val ITEM_WIDTH = WIDTH - ITEM_INDENT
+
+    /** Width of the "Delivery: " label column in the customer details block. */
+    private const val LABEL_COLS = 10
+
+    private val DOLLAR_CURRENCIES = setOf("AUD", "USD", "NZD", "CAD", "SGD", "HKD")
 
     private val DATE_FORMAT = DateTimeFormatter.ofPattern("EEE d MMM yyyy  h:mm a", Locale.ENGLISH)
 
@@ -34,7 +41,19 @@ object TicketFormatter {
         p.bold(true).size(2, 2)
         wrapped(p, order.shopName.uppercase(Locale.ROOT), WIDE)
         p.size(1, 1).bold(false)
-        order.shopDetail?.let { wrapped(p, it, WIDTH) }
+        p.line()
+        order.shopDetail?.let { field(p, "Name:", listOf(it)) }
+        if (order.address.isNotEmpty()) {
+            // Tall text keeps its width, so the address stays in the value column but reads easily
+            p.size(1, 2)
+            field(p, if (order.addressIsDelivery) "Address:" else "Billing:", order.address)
+            p.size(1, 1)
+        }
+        order.phone?.let { field(p, "Phone:", listOf(it)) }
+        order.shippingMethod?.let { field(p, "Delivery:", listOf(it)) }
+        order.paymentMethod?.let { method ->
+            field(p, "Payment:", listOfNotNull(method, order.paymentStatus?.let(::paymentStatusText)))
+        }
 
         val (dateAttrs, otherAttrs) = order.attributes
             .filterNot { it.first.startsWith("_") }
@@ -45,12 +64,15 @@ object TicketFormatter {
             dateAttrs.forEach { (k, v) -> wrapped(p, "${k.uppercase(Locale.ROOT)}: $v", WIDTH) }
             p.size(1, 1).bold(false)
         }
-        order.shippingMethod?.let { wrapped(p, "Method: $it", WIDTH) }
         rule(p, '=')
 
-        for (item in order.lineItems) lineItem(p, item)
+        for (item in order.lineItems) lineItem(p, item, order.currency)
         rule(p, '=')
         p.line("Total items: ${order.lineItems.sumOf { it.quantity }}")
+        order.shippingPrice?.takeIf { it.signum() > 0 }?.let { p.line(leftRight("Delivery fee", money(it, order.currency))) }
+        order.totalPrice?.let {
+            p.bold(true).size(1, 2).line(leftRight("ORDER TOTAL", money(it, order.currency))).size(1, 1).bold(false)
+        }
 
         order.note?.let { note ->
             rule(p, '-')
@@ -107,8 +129,8 @@ object TicketFormatter {
         rule(p, '=')
     }
 
-    /** Quantity large in its own column, product in tall bold text beside it, variant underneath. */
-    private fun lineItem(p: EscPos, item: LineItem) {
+    /** Quantity large in its own column, product in tall bold text beside it, variant and price underneath. */
+    private fun lineItem(p: EscPos, item: LineItem, currency: String = "") {
         val qty = "${item.quantity}x".padEnd(QTY_COLS)
         EscPos.wrap(EscPos.toAscii(item.title), ITEM_WIDTH).forEachIndexed { i, text ->
             p.bold(true).size(2, 2).text(if (i == 0) qty else " ".repeat(QTY_COLS))
@@ -118,7 +140,42 @@ object TicketFormatter {
         item.variant?.let { v ->
             EscPos.wrap(EscPos.toAscii(v), ITEM_WIDTH - 2).forEach { p.line(" ".repeat(ITEM_INDENT) + "- " + it) }
         }
+        val unit = item.unitPrice
+        val total = item.linePrice
+        if (unit != null && total != null) {
+            p.line(" ".repeat(ITEM_INDENT) + leftRight("${money(unit, currency)} each", money(total, currency), ITEM_WIDTH))
+        }
         p.line()
+    }
+
+    /** A "Label:   value" row; long or multi-line values wrap under the value column. */
+    private fun field(p: EscPos, label: String, values: List<String>) {
+        values.flatMap { EscPos.wrap(EscPos.toAscii(it), WIDTH - LABEL_COLS) }.forEachIndexed { i, text ->
+            p.line((if (i == 0) label else "").padEnd(LABEL_COLS) + text)
+        }
+    }
+
+    /** "$5.50" for dollar currencies, otherwise "EUR 5.50". */
+    fun money(amount: BigDecimal, currency: String): String {
+        val value = amount.setScale(2, RoundingMode.HALF_UP).toPlainString()
+        return if (currency.isEmpty() || currency in DOLLAR_CURRENCIES) "$$value" else "$currency $value"
+    }
+
+    /** [left] and [right] on one line, pushed to opposite edges of [width] columns. */
+    private fun leftRight(left: String, right: String, width: Int = WIDTH): String {
+        val l = EscPos.toAscii(left).take((width - right.length - 1).coerceAtLeast(0))
+        return l + " ".repeat((width - l.length - right.length).coerceAtLeast(1)) + right
+    }
+
+    private fun paymentStatusText(status: String): String = when (status) {
+        "PAID" -> "Paid"
+        "PENDING" -> "NOT PAID YET"
+        "AUTHORIZED" -> "Card authorised, not yet charged"
+        "PARTIALLY_PAID" -> "Partly paid"
+        "REFUNDED" -> "Refunded"
+        "PARTIALLY_REFUNDED" -> "Partly refunded"
+        "VOIDED" -> "Voided"
+        else -> status.lowercase(Locale.ROOT).replace('_', ' ').replaceFirstChar { it.uppercase() }
     }
 
     private fun wrapped(p: EscPos, text: String, width: Int) {

@@ -62,6 +62,17 @@ android {
     }
 }
 
+// Read-only order preview: ./gradlew :app:testDebugUnitTest --tests "*OrderPreviewTest" -PorderPreview=24
+// fetches orders from the last 24 hours and writes the raw response and ticket previews to
+// app/build/order-preview. Without the property the preview test is skipped.
+val orderPreviewHours = providers.gradleProperty("orderPreview").getOrElse("")
+tasks.withType<Test>().configureEach {
+    systemProperty("orderPreview", orderPreviewHours)
+    systemProperty("orderPreviewDir", layout.buildDirectory.dir("order-preview").get().asFile.absolutePath)
+    // Live data changes between runs, so never reuse a previous result
+    if (orderPreviewHours.isNotEmpty()) outputs.upToDateWhen { false }
+}
+
 dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)

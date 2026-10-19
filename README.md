@@ -88,3 +88,11 @@ RELEASE_KEY_PASSWORD=
 ```
 
 Build the release APK with `./gradlew assembleRelease`.
+
+To see how recent orders will print without printing or tagging anything, run:
+
+```
+./gradlew :app:testDebugUnitTest --tests "*OrderPreviewTest" -PorderPreview=24
+```
+
+`24` is how many hours back to look. It writes the raw Shopify response to `app/build/order-preview/response.json`, and a text picture of each ticket to `tickets.txt` in the same folder.

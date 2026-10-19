@@ -9,6 +9,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
+import java.math.BigDecimal
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
@@ -98,7 +99,8 @@ class ShopifyClient(
             .callTimeout(30, TimeUnit.SECONDS)
             .build()
 
-        private val ORDERS_QUERY = """
+        /** Internal so the order preview test sends exactly the query the app does. */
+        internal val ORDERS_QUERY = """
             query UnprintedOrders(${'$'}query: String!, ${'$'}cursor: String) {
               orders(first: $PAGE_SIZE, after: ${'$'}cursor, query: ${'$'}query, sortKey: CREATED_AT) {
                 nodes {
@@ -108,12 +110,21 @@ class ShopifyClient(
                   cancelledAt
                   note
                   tags
+                  phone
+                  displayFinancialStatus
+                  paymentGatewayNames
+                  currencyCode
+                  currentShippingPriceSet { shopMoney { amount } }
+                  currentTotalPriceSet { shopMoney { amount } }
                   customAttributes { key value }
                   shippingLine { title }
-                  shippingAddress { company name }
-                  billingAddress { company name }
+                  shippingAddress { company name address1 address2 city provinceCode zip phone }
+                  billingAddress { company name address1 address2 city provinceCode zip phone }
                   lineItems(first: 250) {
-                    nodes { title variantTitle quantity currentQuantity }
+                    nodes {
+                      title variantTitle quantity currentQuantity
+                      discountedUnitPriceAfterAllDiscountsSet { shopMoney { amount } }
+                    }
                   }
                 }
                 pageInfo { hasNextPage endCursor }
@@ -147,6 +158,16 @@ class ShopifyClient(
             val personName = (shipping?.str("name") ?: billing?.str("name"))
                 ?.takeUnless { it.equals(shopName, ignoreCase = true) }
 
+            // Pickup orders have no shipping address, so fall back to billing for the kitchen's reference
+            val shippingLines = shipping?.addressLines().orEmpty()
+            val address = shippingLines.ifEmpty { billing?.addressLines().orEmpty() }
+
+            // Checkout stores the phone on the address; the order's own phone field is usually empty
+            val phone = shipping?.str("phone") ?: billing?.str("phone") ?: o.str("phone")
+            val gateways = o.optJSONArray("paymentGatewayNames") ?: JSONArray()
+            val paymentMethod = (0 until gateways.length()).map { gateways.getString(it) }
+                .filter { it.isNotBlank() }.joinToString(", ").ifEmpty { null }
+
             val attrs = o.optJSONArray("customAttributes") ?: JSONArray()
             val attributes = (0 until attrs.length()).mapNotNull {
                 val a = attrs.getJSONObject(it)
@@ -165,6 +186,7 @@ class ShopifyClient(
                     quantity = qty,
                     title = li.str("title") ?: "Item",
                     variant = li.str("variantTitle")?.takeUnless { it == "Default Title" },
+                    unitPrice = li.money("discountedUnitPriceAfterAllDiscountsSet"),
                 )
             }
 
@@ -181,10 +203,29 @@ class ShopifyClient(
                 tags = (0 until tags.length()).map { tags.getString(it) },
                 attributes = attributes,
                 lineItems = items,
+                address = address,
+                addressIsDelivery = shippingLines.isNotEmpty(),
+                phone = phone,
+                paymentMethod = paymentMethod,
+                paymentStatus = o.str("displayFinancialStatus"),
+                currency = o.str("currencyCode").orEmpty(),
+                shippingPrice = o.money("currentShippingPriceSet"),
+                totalPrice = o.money("currentTotalPriceSet"),
             )
         }
 
+        /** "12 Example St", optional unit line, then "Suburb NSW 2000". */
+        private fun JSONObject.addressLines(): List<String> = listOfNotNull(
+            str("address1"),
+            str("address2"),
+            listOfNotNull(str("city"), str("provinceCode"), str("zip")).joinToString(" ").ifEmpty { null },
+        )
+
         private fun JSONObject.obj(key: String): JSONObject? = if (isNull(key)) null else optJSONObject(key)
+
+        /** Amount of a MoneyBag field in the shop's currency. */
+        private fun JSONObject.money(key: String): BigDecimal? =
+            obj(key)?.obj("shopMoney")?.str("amount")?.toBigDecimalOrNull()
 
         /** Non-blank string or null. org.json's optString turns JSON null into "null", so avoid it. */
         private fun JSONObject.str(key: String): String? =
