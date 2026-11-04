@@ -3,6 +3,7 @@ package com.example.shopify_receipt_printer
 import com.example.shopify_receipt_printer.EscPos.Align
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -23,12 +24,15 @@ object TicketFormatter {
 
     private val DOLLAR_CURRENCIES = setOf("AUD", "USD", "NZD", "CAD", "SGD", "HKD")
 
+    /** Orders printing this long after they were placed get a LATE banner, e.g. after the printer was off. */
+    private val LATE_AFTER: Duration = Duration.ofMinutes(30)
+
     private val DATE_FORMAT = DateTimeFormatter.ofPattern("EEE d MMM yyyy  h:mm a", Locale.ENGLISH)
 
     /** Attribute keys that most delivery/pickup date apps use. */
     private val DATE_KEY_HINTS = listOf("date", "deliver", "pickup", "pick up", "pick-up", "time", "day")
 
-    fun format(order: Order, header: String, zone: ZoneId = ZoneId.systemDefault()): ByteArray {
+    fun format(order: Order, header: String, zone: ZoneId = ZoneId.systemDefault(), now: Instant = Instant.now()): ByteArray {
         val p = EscPos().init()
         header(p, header)
 
@@ -36,6 +40,11 @@ object TicketFormatter {
         wrapped(p, "ORDER ${order.name}", WIDE)
         p.size(1, 1).bold(false)
         p.line("Placed: " + DATE_FORMAT.format(order.createdAt.atZone(zone)))
+        val age = Duration.between(order.createdAt, now)
+        if (age >= LATE_AFTER) {
+            p.bold(true).size(2, 2).line("** LATE **")
+            p.size(1, 1).line("Placed ${describe(age)} ago").bold(false)
+        }
         rule(p, '-')
 
         p.bold(true).size(2, 2)
@@ -106,8 +115,18 @@ object TicketFormatter {
         return p.feed(4).cut().bytes()
     }
 
-    /** Printed once when the app finds the printer, so the kitchen knows it is set up. */
-    fun connectedTicket(header: String, printerHost: String, now: Instant = Instant.now(), zone: ZoneId = ZoneId.systemDefault()): ByteArray {
+    /**
+     * Printed once a printer is chosen and the store has accepted the token, so the kitchen knows it is set
+     * up. On first install it also lists recent unprinted orders placed before the app started, which are
+     * not printed automatically.
+     */
+    fun connectedTicket(
+        header: String,
+        printerHost: String,
+        now: Instant = Instant.now(),
+        zone: ZoneId = ZoneId.systemDefault(),
+        skippedOrders: List<String> = emptyList(),
+    ): ByteArray {
         val p = EscPos().init()
         header(p, header)
         p.align(Align.CENTER).bold(true).size(2, 2)
@@ -118,6 +137,15 @@ object TicketFormatter {
         p.line()
         p.line("New Shopify orders will print here")
         p.line("automatically.")
+        if (skippedOrders.isNotEmpty()) {
+            rule(p, '-')
+            p.bold(true).line("NOT PRINTED").bold(false)
+            wrapped(p, "These orders were placed before the app started, so they won't print automatically:", WIDTH)
+            p.bold(true).size(1, 2)
+            wrapped(p, skippedOrders.joinToString(", "), WIDTH)
+            p.size(1, 1).bold(false)
+            wrapped(p, "Check them in Shopify if they still need making.", WIDTH)
+        }
         return p.feed(4).cut().bytes()
     }
 
@@ -161,9 +189,21 @@ object TicketFormatter {
         return if (currency.isEmpty() || currency in DOLLAR_CURRENCIES) "$$value" else "$currency $value"
     }
 
+    /** "45 minutes", "3 hours", "2 days 4 hours". */
+    private fun describe(age: Duration): String {
+        fun plural(n: Long, unit: String) = "$n $unit" + if (n == 1L) "" else "s"
+        val days = age.toDays()
+        val hours = age.toHours() % 24
+        return when {
+            days > 0 -> plural(days, "day") + if (hours > 0) " " + plural(hours, "hour") else ""
+            age.toHours() > 0 -> plural(age.toHours(), "hour")
+            else -> plural(age.toMinutes(), "minute")
+        }
+    }
+
     /** [left] and [right] on one line, pushed to opposite edges of [width] columns. */
     private fun leftRight(left: String, right: String, width: Int = WIDTH): String {
-        val l = EscPos.toAscii(left).take((width - right.length - 1).coerceAtLeast(0))
+        val l = EscPos.toAscii(left).replace('\n', ' ').take((width - right.length - 1).coerceAtLeast(0))
         return l + " ".repeat((width - l.length - right.length).coerceAtLeast(1)) + right
     }
 

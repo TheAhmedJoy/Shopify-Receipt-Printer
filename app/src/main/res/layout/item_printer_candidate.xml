@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One device that answered on the printer port: its address, then Test and Use side by side -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingTop="16dp"
+    android:paddingBottom="4dp">
+
+    <TextView
+        android:id="@+id/candidateAddress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/candidateTestButton"
+            style="@style/ActionButton.Outlined"
+            android:layout_width="0dp"
+            android:layout_marginEnd="12dp"
+            android:layout_weight="1"
+            android:text="@string/candidate_test" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/candidateUseButton"
+            style="@style/ActionButton"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:text="@string/candidate_use" />
+    </LinearLayout>
+</LinearLayout>

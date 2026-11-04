@@ -6,6 +6,7 @@
     <string name="section_orders">Orders</string>
     <string name="section_printer">Printer</string>
     <string name="section_device">Keep running</string>
+    <string name="section_choose_printer">Choose the kitchen printer</string>
 
     <string name="label_last_check">Last check</string>
     <string name="label_last_printed">Last printed</string>
@@ -24,4 +25,9 @@
     <string name="find_printer_busy">Searching…</string>
     <string name="save_printer">Save</string>
     <string name="battery_settings">Battery settings</string>
+    <string name="candidate_test">Print test</string>
+    <string name="candidate_use">Use this printer</string>
+    <string name="choose_printer_several">More than one device answered as a printer. Print a test on each to see which one is in the kitchen, then choose it.</string>
+    <string name="choose_printer_moved">The printer at %1$s isn\'t answering. Another device answered instead. If a test ticket comes out of the kitchen printer, choose it. Otherwise switch the kitchen printer back on and this goes away.</string>
+    <string name="printer_not_chosen">Not chosen yet</string>
 </resources>

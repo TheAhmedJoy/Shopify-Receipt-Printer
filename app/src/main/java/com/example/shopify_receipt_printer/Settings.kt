@@ -20,22 +20,47 @@ class Settings(context: Context) {
     val printerPort: Int = DEFAULT_PRINTER_PORT
     val pollSeconds: Int = DEFAULT_POLL_SECONDS
 
-    /** Never look further back than this, however long the device was offline. */
-    val lookbackHours: Int = DEFAULT_LOOKBACK_HOURS
-
-    var printerHost: String
+    /** The chosen printer. Once set it is kept: the app never switches printers by itself. */
+    val printerHost: String
         get() = prefs.getString(KEY_PRINTER_HOST, "")!!
-        set(value) = prefs.edit { putString(KEY_PRINTER_HOST, value.trim()) }
+
+    /** Devices that answered on the printer port, waiting for someone to pick the kitchen printer. */
+    var printerCandidates: List<String>
+        get() = prefs.getString(KEY_PRINTER_CANDIDATES, "")!!.split(',').filter { it.isNotEmpty() }
+        set(value) = prefs.edit { putString(KEY_PRINTER_CANDIDATES, value.joinToString(",")) }
+
+    /** True once [printerHost] has answered a status query, so going quiet afterwards counts as a failure. */
+    var printerReportsStatus: Boolean
+        get() = prefs.getBoolean(KEY_PRINTER_REPORTS_STATUS, false)
+        set(value) = prefs.edit { putBoolean(KEY_PRINTER_REPORTS_STATUS, value) }
+
+    /** A PRINTER CONNECTED ticket is due, printed once the store connection has been confirmed. */
+    var connectedTicketPending: Boolean
+        get() = prefs.getBoolean(KEY_CONNECTED_TICKET_PENDING, false)
+        set(value) = prefs.edit { putBoolean(KEY_CONNECTED_TICKET_PENDING, value) }
 
     /** Orders created before this instant (epoch millis) are ignored. 0 means not set yet. */
     var printSinceMillis: Long
         get() = prefs.getLong(KEY_PRINT_SINCE, 0L)
         set(value) = prefs.edit { putLong(KEY_PRINT_SINCE, value) }
 
-    /** True when [printerHost] was found by a network scan rather than typed in, so it may be re-scanned. */
-    var printerAutoDiscovered: Boolean
-        get() = prefs.getBoolean(KEY_PRINTER_AUTO, false)
-        set(value) = prefs.edit { putBoolean(KEY_PRINTER_AUTO, value) }
+    /** Set on first run: recent orders placed before install still need listing on the connected ticket. */
+    var skippedOrdersCheckPending: Boolean
+        get() = prefs.getBoolean(KEY_SKIPPED_CHECK_PENDING, false)
+        set(value) = prefs.edit { putBoolean(KEY_SKIPPED_CHECK_PENDING, value) }
+
+    /** Unprinted orders placed shortly before install, e.g. "#1005,#1006", to list on the connected ticket. */
+    var skippedOrders: List<String>
+        get() = prefs.getString(KEY_SKIPPED_ORDERS, "")!!.split(',').filter { it.isNotEmpty() }
+        set(value) = prefs.edit { putString(KEY_SKIPPED_ORDERS, value.joinToString(",")) }
+
+    /** Makes [host] the printer, clears any pending choice and queues a PRINTER CONNECTED ticket. */
+    fun choosePrinter(host: String) = prefs.edit {
+        putString(KEY_PRINTER_HOST, host.trim())
+        putString(KEY_PRINTER_CANDIDATES, "")
+        putBoolean(KEY_PRINTER_REPORTS_STATUS, false)
+        putBoolean(KEY_CONNECTED_TICKET_PENDING, true)
+    }
 
     /** Names of required Shopify settings missing from the build. The printer is found automatically. */
     fun missingFields(): List<String> = buildList {
@@ -47,10 +72,13 @@ class Settings(context: Context) {
         const val DEFAULT_API_VERSION = "2026-10"
         const val DEFAULT_PRINTER_PORT = 9100
         const val DEFAULT_POLL_SECONDS = 25
-        const val DEFAULT_LOOKBACK_HOURS = 48
 
         private const val KEY_PRINTER_HOST = "printer_host"
-        private const val KEY_PRINTER_AUTO = "printer_auto"
+        private const val KEY_PRINTER_CANDIDATES = "printer_candidates"
+        private const val KEY_PRINTER_REPORTS_STATUS = "printer_reports_status"
+        private const val KEY_CONNECTED_TICKET_PENDING = "connected_ticket_pending"
         private const val KEY_PRINT_SINCE = "print_since"
+        private const val KEY_SKIPPED_CHECK_PENDING = "skipped_check_pending"
+        private const val KEY_SKIPPED_ORDERS = "skipped_orders"
     }
 }
