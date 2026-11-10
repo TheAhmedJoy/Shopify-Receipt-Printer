@@ -1,6 +1,7 @@
 package com.example.shopify_receipt_printer
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.math.BigDecimal
@@ -20,6 +21,54 @@ class TicketFormatterTest {
     fun toAsciiStripsAccentsAndSmartPunctuation() {
         assertEquals("Creme brulee - \"Jo's\"...", EscPos.toAscii("Crème brûlée — “Jo’s”…"))
         assertEquals("?", EscPos.toAscii("🍞"))
+    }
+
+    @Test
+    fun toAsciiKeepsLineBreaks() {
+        assertEquals("Line one\nLine two\nLine three", EscPos.toAscii("Line one\r\nLine two\rLine three"))
+    }
+
+    private fun simpleOrder(createdAt: Instant, note: String? = null) = Order(
+        "id", "#7", createdAt, false, "Hillside Shop", null, null, note, emptyList(), emptyList(),
+        listOf(LineItem(1, "Pie", null)),
+    )
+
+    private fun render(bytes: ByteArray) = EscPosPreview.render(bytes)
+
+    @Test
+    fun multiLineNoteKeepsItsLineBreaks() {
+        val now = Instant.parse("2026-11-03T00:00:00Z")
+        val text = render(TicketFormatter.format(simpleOrder(now, "Ring the bell\nLeave by the gate"), "H", ZoneId.of("UTC"), now))
+        assertTrue(text, text.contains("| Ring the bell "))
+        assertTrue(text, text.contains("| Leave by the gate "))
+        assertFalse(text, text.contains("?"))
+    }
+
+    @Test
+    fun lateOrdersGetABanner() {
+        val placed = Instant.parse("2026-11-01T09:00:00Z")
+        val onTime = render(TicketFormatter.format(simpleOrder(placed), "H", ZoneId.of("UTC"), placed.plusSeconds(10 * 60)))
+        assertFalse(onTime.contains("L A T E"))
+        val late = render(TicketFormatter.format(simpleOrder(placed), "H", ZoneId.of("UTC"), placed.plusSeconds((2 * 24 + 3) * 3600L)))
+        assertTrue(late, late.contains("* *   L A T E   * *"))
+        assertTrue(late, late.contains("Placed 2 days 3 hours ago"))
+        val anHour = render(TicketFormatter.format(simpleOrder(placed), "H", ZoneId.of("UTC"), placed.plusSeconds(3600 + 120)))
+        assertTrue(anHour, anHour.contains("Placed 1 hour ago"))
+    }
+
+    @Test
+    fun connectedTicketListsOrdersSkippedAtInstall() {
+        val plain = render(TicketFormatter.connectedTicket("H", "10.0.0.5"))
+        assertFalse(plain.contains("NOT PRINTED"))
+        val withSkipped = render(TicketFormatter.connectedTicket("H", "10.0.0.5", skippedOrders = listOf("#1006", "#1007")))
+        assertTrue(withSkipped, withSkipped.contains("NOT PRINTED"))
+        assertTrue(withSkipped, withSkipped.contains("#1006, #1007"))
+    }
+
+    @Test
+    fun sentenceJoinsWithoutDoubledPunctuation() {
+        assertEquals("Printer off. 2 waiting", OrderPoller.sentence("Printer off", "2 waiting"))
+        assertEquals("Is it on? 2 waiting", OrderPoller.sentence("Is it on?", "2 waiting"))
     }
 
     @Test

@@ -16,6 +16,8 @@ class StatusStore(context: Context) {
     val lastPrintedMillis: Long get() = prefs.getLong(KEY_LAST_PRINTED_AT, 0L)
     val lastError: String get() = prefs.getString(KEY_LAST_ERROR, "")!!
     val lastErrorMillis: Long get() = prefs.getLong(KEY_LAST_ERROR_AT, 0L)
+    /** When the current run of errors started, however often the message changed since. 0 when there is none. */
+    val problemSinceMillis: Long get() = prefs.getLong(KEY_PROBLEM_SINCE, 0L)
     val log: List<String> get() = prefs.getString(KEY_LOG, "")!!.lines().filter { it.isNotEmpty() }
 
     fun recordPoll(result: String) = prefs.edit {
@@ -34,14 +36,16 @@ class StatusStore(context: Context) {
     fun recordError(message: String) {
         // Repeated identical errors (e.g. printer off for an hour) only get logged once
         val repeated = message == lastError
+        val now = System.currentTimeMillis()
         prefs.edit {
+            if (lastError.isEmpty()) putLong(KEY_PROBLEM_SINCE, now)
             putString(KEY_LAST_ERROR, message)
-            putLong(KEY_LAST_ERROR_AT, System.currentTimeMillis())
+            putLong(KEY_LAST_ERROR_AT, now)
         }
         if (!repeated) log("Error: $message")
     }
 
-    fun clearError() = prefs.edit { remove(KEY_LAST_ERROR); remove(KEY_LAST_ERROR_AT) }
+    fun clearError() = prefs.edit { remove(KEY_LAST_ERROR); remove(KEY_LAST_ERROR_AT); remove(KEY_PROBLEM_SINCE) }
 
     fun log(message: String) {
         val stamp = TIME_FORMAT.format(Instant.now().atZone(ZoneId.systemDefault()))
@@ -59,6 +63,7 @@ class StatusStore(context: Context) {
         private const val KEY_LAST_PRINTED_AT = "last_printed_at"
         private const val KEY_LAST_ERROR = "last_error"
         private const val KEY_LAST_ERROR_AT = "last_error_at"
+        private const val KEY_PROBLEM_SINCE = "problem_since"
         private const val KEY_LOG = "log"
     }
 }

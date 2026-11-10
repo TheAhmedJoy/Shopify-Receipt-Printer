@@ -19,7 +19,8 @@ class EscPos {
     fun size(width: Int = 1, height: Int = 1) =
         cmd(GS, '!'.code, ((width - 1).coerceIn(0, 7) shl 4) or (height - 1).coerceIn(0, 7))
 
-    fun text(s: String) = apply { out.write(toAscii(s).toByteArray(Charsets.US_ASCII)) }
+    /** Text on the current line. Line breaks become spaces; use [line] to end a line. */
+    fun text(s: String) = apply { out.write(toAscii(s).replace('\n', ' ').toByteArray(Charsets.US_ASCII)) }
 
     fun line(s: String = "") = text(s).apply { out.write(LF) }
 
@@ -38,19 +39,23 @@ class EscPos {
         private const val LF = 0x0A
 
         private val REPLACEMENTS = mapOf(
-            '\u2018' to "'", '\u2019' to "'", '\u201C' to "\"", '\u201D' to "\"",
-            '\u2013' to "-", '\u2014' to "-", '\u2026' to "...", '\u00A0' to " ",
-            '\u00D7' to "x", '\t' to " ",
+            '‘' to "'", '’' to "'", '“' to "\"", '”' to "\"",
+            '–' to "-", '—' to "-", '…' to "...", ' ' to " ",
+            '×' to "x", '\t' to " ",
         )
 
-        /** Strips accents, swaps typographic punctuation, and replaces anything else outside ASCII. */
+        /**
+         * Strips accents, swaps typographic punctuation, and replaces anything else outside ASCII.
+         * Line breaks are kept (as '\n') so multi-line notes can be wrapped line by line.
+         */
         fun toAscii(s: String): String {
             val sb = StringBuilder()
+            val text = s.replace("\r\n", "\n").replace('\r', '\n')
             // Walk code points, not chars, so an emoji (a surrogate pair) becomes one "?" and not two
-            Normalizer.normalize(s, Normalizer.Form.NFD).codePoints().forEach { cp ->
+            Normalizer.normalize(text, Normalizer.Form.NFD).codePoints().forEach { cp ->
                 when {
                     Character.getType(cp) == Character.NON_SPACING_MARK.toInt() -> Unit
-                    cp in 0x20..0x7E -> sb.append(cp.toChar())
+                    cp in 0x20..0x7E || cp == '\n'.code -> sb.append(cp.toChar())
                     cp <= 0xFFFF -> sb.append(REPLACEMENTS[cp.toChar()] ?: "?")
                     else -> sb.append('?')
                 }

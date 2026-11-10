@@ -27,9 +27,10 @@ class ShopifyClient(
     var lastWarnings: List<String> = emptyList()
         private set
 
-    /** Unprinted orders created at or after [since], oldest first. */
+    /** Unprinted, uncancelled orders created at or after [since], oldest first. */
     suspend fun fetchUnprintedOrders(since: Instant): List<Order> {
-        val search = "-tag:$PRINTED_TAG created_at:>='${since.truncatedTo(ChronoUnit.SECONDS)}'"
+        // Cancelled orders are never printed or tagged, so leave them out or they would pile up in every result
+        val search = "-tag:$PRINTED_TAG -status:cancelled created_at:>='${since.truncatedTo(ChronoUnit.SECONDS)}'"
         val orders = mutableListOf<Order>()
         val warnings = mutableListOf<String>()
         var cursor: String? = null

@@ -22,6 +22,8 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
+            <include layout="@layout/panel_choose_printer" />
+
             <include layout="@layout/panel_status" />
 
             <include layout="@layout/panel_activity" />

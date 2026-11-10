@@ -13,6 +13,8 @@
         android:paddingTop="24dp"
         android:paddingEnd="20dp">
 
+        <include layout="@layout/panel_choose_printer" />
+
         <include layout="@layout/panel_status" />
 
         <include layout="@layout/panel_controls" />
